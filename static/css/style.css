@@ -19,6 +19,14 @@
     --border: #e4e1da;
     --border-soft: #eeebe4;
 
+    --cat-food: #c1642c;
+    --cat-transport: #4d79f6;
+    --cat-bills: #7b68ee;
+    --cat-health: #2f9e6e;
+    --cat-entertainment: #e8a33d;
+    --cat-shopping: #c2489d;
+    --cat-other: #6b6b6b;
+
     --font-display: 'DM Serif Display', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
 
@@ -28,6 +36,8 @@
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
+
+    --shadow-card: 0 1px 2px rgba(15, 15, 15, 0.04), 0 1px 3px rgba(15, 15, 15, 0.06);
 }
 
 /* ------------------------------------------------------------------ */

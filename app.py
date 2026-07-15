@@ -82,6 +82,49 @@ def logout():
     return redirect(url_for("landing"))
 
 
+@app.route("/profile")
+def profile():
+    if session.get("user_id") is None:
+        return redirect(url_for("login"))
+
+    profile_user = {
+        "name": "Nitish Sharma",
+        "email": "nitish@example.com",
+        "initials": "NS",
+        "member_since": "March 2025",
+    }
+
+    summary_stats = {
+        "total_spent": 270.95,
+        "transaction_count": 24,
+        "top_category": "Food",
+    }
+
+    transactions = [
+        {"date": "2026-07-14", "description": "Grocery shopping at Bhat-Bhateni", "category": "Food", "amount": 24.20},
+        {"date": "2026-07-12", "description": "Bus pass top-up", "category": "Transport", "amount": 20.00},
+        {"date": "2026-07-10", "description": "Electricity bill", "category": "Bills", "amount": 85.00},
+        {"date": "2026-07-08", "description": "Pharmacy - cold medicine", "category": "Health", "amount": 32.75},
+        {"date": "2026-07-05", "description": "Movie tickets - Cineplex", "category": "Entertainment", "amount": 15.00},
+    ]
+
+    category_breakdown = [
+        {"category": "Food", "amount": 96.20, "percent": 35},
+        {"category": "Bills", "amount": 85.00, "percent": 31},
+        {"category": "Transport", "amount": 42.00, "percent": 15},
+        {"category": "Health", "amount": 32.75, "percent": 12},
+        {"category": "Entertainment", "amount": 15.00, "percent": 7},
+    ]
+
+    return render_template(
+        "profile.html",
+        profile_user=profile_user,
+        summary_stats=summary_stats,
+        transactions=transactions,
+        category_breakdown=category_breakdown,
+    )
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -95,11 +138,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    return "Profile page — coming in Step 4"
-
 
 @app.route("/expenses/add")
 def add_expense():
