@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -17,6 +17,53 @@ from database.db import (
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
+
+
+DATE_FORMAT = "%Y-%m-%d"
+PRESETS = ("this_month", "last_30_days", "this_year", "all")
+
+
+def _parse_date(value):
+    try:
+        return datetime.strptime(value.strip(), DATE_FORMAT).strftime(DATE_FORMAT)
+    except (ValueError, AttributeError):
+        return None
+
+
+def _resolve_date_filter(args, today):
+    date_from = date_to = preset = error = None
+
+    requested_preset = args.get("preset", "").strip()
+    if requested_preset in PRESETS:
+        preset = requested_preset
+        if preset == "this_month":
+            date_from = today.replace(day=1)
+        elif preset == "last_30_days":
+            # 30 days inclusive of today
+            date_from = today - timedelta(days=29)
+        elif preset == "this_year":
+            date_from = today.replace(month=1, day=1)
+        if preset != "all":
+            date_from = date_from.strftime(DATE_FORMAT)
+            date_to = today.strftime(DATE_FORMAT)
+    else:
+        raw_from = args.get("date_from", "").strip()
+        raw_to = args.get("date_to", "").strip()
+        date_from = _parse_date(raw_from) if raw_from else None
+        date_to = _parse_date(raw_to) if raw_to else None
+        if (raw_from and date_from is None) or (raw_to and date_to is None):
+            error = "Invalid date ignored."
+        if date_from and date_to and date_from > date_to:
+            error = "Start date must be on or before end date."
+            date_from = date_to = None
+
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "error": error,
+        "active": bool(date_from or date_to),
+    }
 
 
 @app.context_processor
@@ -112,11 +159,21 @@ def profile():
         "member_since": member_since,
     }
 
-    summary_stats = get_summary_stats(session["user_id"])
+    date_filter = _resolve_date_filter(request.args, date.today())
+    date_from = date_filter["date_from"]
+    date_to = date_filter["date_to"]
+    user_id = session["user_id"]
 
-    transactions = get_recent_transactions(session["user_id"])
+    summary_stats = get_summary_stats(user_id, date_from, date_to)
 
-    category_breakdown = get_category_breakdown(session["user_id"])
+    transactions = get_recent_transactions(
+        user_id,
+        limit=None if date_filter["active"] else 5,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    category_breakdown = get_category_breakdown(user_id, date_from, date_to)
 
     return render_template(
         "profile.html",
@@ -124,6 +181,7 @@ def profile():
         summary_stats=summary_stats,
         transactions=transactions,
         category_breakdown=category_breakdown,
+        date_filter=date_filter,
     )
 
 

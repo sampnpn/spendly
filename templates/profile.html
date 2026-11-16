@@ -21,6 +21,38 @@
       </div>
     </div>
 
+    <!-- Date filter -->
+    <div class="profile-card profile-filter">
+      <form method="get" action="{{ url_for('profile') }}" class="profile-filter-form">
+        <div class="profile-filter-field">
+          <label for="date_from" class="profile-filter-label">From</label>
+          <input type="date" id="date_from" name="date_from" class="form-input" value="{{ date_filter.date_from or '' }}">
+        </div>
+        <div class="profile-filter-field">
+          <label for="date_to" class="profile-filter-label">To</label>
+          <input type="date" id="date_to" name="date_to" class="form-input" value="{{ date_filter.date_to or '' }}">
+        </div>
+        <button type="submit" class="btn-primary">Apply</button>
+        <a href="{{ url_for('profile') }}" class="btn-ghost">Clear</a>
+      </form>
+      <div class="profile-presets">
+        <a href="{{ url_for('profile', preset='this_month') }}" class="profile-preset-chip{% if date_filter.preset == 'this_month' %} is-active{% endif %}">This month</a>
+        <a href="{{ url_for('profile', preset='last_30_days') }}" class="profile-preset-chip{% if date_filter.preset == 'last_30_days' %} is-active{% endif %}">Last 30 days</a>
+        <a href="{{ url_for('profile', preset='this_year') }}" class="profile-preset-chip{% if date_filter.preset == 'this_year' %} is-active{% endif %}">This year</a>
+        <a href="{{ url_for('profile', preset='all') }}" class="profile-preset-chip{% if date_filter.preset == 'all' %} is-active{% endif %}">All time</a>
+      </div>
+      {% if date_filter.error %}
+      <p class="profile-filter-error" role="alert">{{ date_filter.error }}</p>
+      {% endif %}
+      {% if date_filter.active %}
+      <p class="profile-range-label">
+        {% if date_filter.date_from and date_filter.date_to %}Showing {{ date_filter.date_from }} – {{ date_filter.date_to }}
+        {% elif date_filter.date_from %}Showing from {{ date_filter.date_from }}
+        {% else %}Showing up to {{ date_filter.date_to }}{% endif %}
+      </p>
+      {% endif %}
+    </div>
+
     <!-- 2. Summary stats -->
     <div class="profile-stats">
       <div class="profile-stat">
@@ -39,7 +71,7 @@
 
     <!-- 3. Transaction history -->
     <div class="profile-card">
-      <h2 class="profile-card-title">Recent transactions</h2>
+      <h2 class="profile-card-title">{{ "Transactions" if date_filter.active else "Recent transactions" }}</h2>
       <div class="profile-table-wrap">
         <table class="profile-table">
           <thead>
@@ -60,7 +92,7 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="4">No transactions yet</td>
+              <td colspan="4">{{ "No transactions in this range" if date_filter.active else "No transactions yet" }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -81,7 +113,7 @@
           <span class="profile-bar-amount">₹{{ "%.2f"|format(cat.amount) }}</span>
         </div>
         {% else %}
-        <p class="profile-empty">No expenses yet.</p>
+        <p class="profile-empty">{{ "No expenses in this range." if date_filter.active else "No expenses yet." }}</p>
         {% endfor %}
       </div>
     </div>
