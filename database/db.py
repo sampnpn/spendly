@@ -81,6 +81,50 @@ def get_user_by_id(user_id):
     return row
 
 
+def get_summary_stats(user_id):
+    conn = get_db()
+    totals = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count "
+        "FROM expenses WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()
+    top = conn.execute(
+        "SELECT category FROM expenses WHERE user_id = ? "
+        "GROUP BY category ORDER BY SUM(amount) DESC, category ASC LIMIT 1",
+        (user_id,),
+    ).fetchone()
+    conn.close()
+    return {
+        "total_spent": float(totals["total"]),
+        "transaction_count": int(totals["count"]),
+        "top_category": top["category"] if top else "—",
+    }
+
+
+def get_recent_transactions(user_id, limit=5):
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT date, description, category, amount
+        FROM expenses
+        WHERE user_id = ?
+        ORDER BY date DESC, id DESC
+        LIMIT ?
+        """,
+        (user_id, limit),
+    ).fetchall()
+    conn.close()
+    return [
+        {
+            "date": row["date"],
+            "description": row["description"] or "",
+            "category": row["category"],
+            "amount": row["amount"],
+        }
+        for row in rows
+    ]
+
+
 def seed_db():
     conn = get_db()
     row = conn.execute("SELECT COUNT(*) AS count FROM users").fetchone()
@@ -123,3 +167,30 @@ def seed_db():
     )
     conn.commit()
     conn.close()
+
+
+def get_category_breakdown(user_id):
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT category, SUM(amount) AS amount
+        FROM expenses
+        WHERE user_id = ?
+        GROUP BY category
+        ORDER BY amount DESC, category ASC
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+
+    total = sum(row["amount"] for row in rows)
+    if not total:
+        return []
+    return [
+        {
+            "category": row["category"],
+            "amount": row["amount"],
+            "percent": round(row["amount"] / total * 100),
+        }
+        for row in rows
+    ]

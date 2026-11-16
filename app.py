@@ -1,9 +1,14 @@
+from datetime import datetime
+
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import (
     create_user,
+    get_category_breakdown,
     get_db,
+    get_recent_transactions,
+    get_summary_stats,
     get_user_by_email,
     get_user_by_id,
     init_db,
@@ -34,7 +39,7 @@ def landing():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if session.get("user_id") is not None:
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template("register.html")
@@ -63,7 +68,7 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("user_id") is not None:
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template("login.html")
@@ -79,7 +84,7 @@ def login():
         return render_template("login.html", error="Invalid email or password.")
 
     session["user_id"] = user["id"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/logout")
@@ -93,34 +98,25 @@ def profile():
     if session.get("user_id") is None:
         return redirect(url_for("login"))
 
+    user = get_user_by_id(session["user_id"])
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    initials = "".join(part[0] for part in user["name"].split()[:2]).upper()
+    member_since = datetime.strptime(user["created_at"], "%Y-%m-%d %H:%M:%S").strftime("%B %Y")
     profile_user = {
-        "name": "Nitish Sharma",
-        "email": "nitish@example.com",
-        "initials": "NS",
-        "member_since": "March 2025",
+        "name": user["name"],
+        "email": user["email"],
+        "initials": initials or "?",
+        "member_since": member_since,
     }
 
-    summary_stats = {
-        "total_spent": 270.95,
-        "transaction_count": 24,
-        "top_category": "Food",
-    }
+    summary_stats = get_summary_stats(session["user_id"])
 
-    transactions = [
-        {"date": "2026-07-14", "description": "Grocery shopping at Bhat-Bhateni", "category": "Food", "amount": 24.20},
-        {"date": "2026-07-12", "description": "Bus pass top-up", "category": "Transport", "amount": 20.00},
-        {"date": "2026-07-10", "description": "Electricity bill", "category": "Bills", "amount": 85.00},
-        {"date": "2026-07-08", "description": "Pharmacy - cold medicine", "category": "Health", "amount": 32.75},
-        {"date": "2026-07-05", "description": "Movie tickets - Cineplex", "category": "Entertainment", "amount": 15.00},
-    ]
+    transactions = get_recent_transactions(session["user_id"])
 
-    category_breakdown = [
-        {"category": "Food", "amount": 96.20, "percent": 35},
-        {"category": "Bills", "amount": 85.00, "percent": 31},
-        {"category": "Transport", "amount": 42.00, "percent": 15},
-        {"category": "Health", "amount": 32.75, "percent": 12},
-        {"category": "Entertainment", "amount": 15.00, "percent": 7},
-    ]
+    category_breakdown = get_category_breakdown(session["user_id"])
 
     return render_template(
         "profile.html",

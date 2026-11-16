@@ -9,7 +9,7 @@ def test_logged_in_user_is_redirected_away(client, path):
     for method in (client.get, client.post):
         response = method(path)
         assert response.status_code == 302
-        assert response.headers["Location"].endswith("/")
+        assert response.headers["Location"].endswith("/profile")
 
 
 @pytest.mark.parametrize("path", ["/login", "/register"])

@@ -22,7 +22,7 @@ def test_post_login_with_valid_credentials_logs_in(client):
     )
 
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/")
+    assert response.headers["Location"].endswith("/profile")
 
     with client.session_transaction() as sess:
         assert sess["user_id"] is not None

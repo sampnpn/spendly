@@ -58,6 +58,10 @@
               <td><span class="badge cat-color-{{ tx.category|lower }}">{{ tx.category }}</span></td>
               <td class="profile-amount">₹{{ "%.2f"|format(tx.amount) }}</td>
             </tr>
+            {% else %}
+            <tr>
+              <td colspan="4">No transactions yet</td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -76,6 +80,8 @@
           </div>
           <span class="profile-bar-amount">₹{{ "%.2f"|format(cat.amount) }}</span>
         </div>
+        {% else %}
+        <p class="profile-empty">No expenses yet.</p>
         {% endfor %}
       </div>
     </div>
